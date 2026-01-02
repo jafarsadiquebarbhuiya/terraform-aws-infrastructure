@@ -31,3 +31,8 @@ crash.*.log
 
 *.pem
 *.pub
+aws/
+dist/
+vendor/
+*.pem
+*.pub
