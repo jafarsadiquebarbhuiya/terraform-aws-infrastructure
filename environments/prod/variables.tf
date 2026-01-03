@@ -9,7 +9,7 @@ variable "vpc_cidr" {
   description = "VPC CIDR range"
   type        = string
 }
-variable "app_sybnet_cidr" {
+variable "app_subnet_cidr" {
   description = "VPC CIDR range"
   type        = string
 }

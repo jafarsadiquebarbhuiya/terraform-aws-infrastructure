@@ -1,0 +1,75 @@
+name: Terraform prod
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - environments/prod/**
+      - modules/**
+      - "**/*.tf"
+      - "**/*.tfvars"
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    environment: prod
+
+    defaults:
+      run:
+        working-directory: environments/prod
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: AWS Login
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ vars.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_DEFAULT_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: terraform plan -var-file="prod.tfvars"
+
+  apply:
+    needs: plan
+    runs-on: ubuntu-latest
+    environment:
+      name: prod #Manual approval happens here
+
+    defaults:
+      run:
+        working-directory: environments/prod
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Debug Info
+        run: |
+          echo "AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION"
+      - name: AWS Login
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ vars.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_DEFAULT_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -var-file="prod.tfvars"
