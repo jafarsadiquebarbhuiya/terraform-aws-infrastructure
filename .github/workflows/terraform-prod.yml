@@ -1,3 +1,82 @@
+# name: Terraform prod
+
+# on:
+#   push:
+#     branches:
+#       - master
+#     paths:
+#       - environments/prod/**
+#       - modules/**
+#       - "**/*.tf"
+#       - "**/*.tfvars"
+
+# jobs:
+#   plan:
+#     name: Terraform Plan (prod)
+#     runs-on: ubuntu-latest
+#     environment: prod
+
+#     defaults:
+#       run:
+#         working-directory: environments/prod
+
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
+
+#       - name: Configure AWS credentials
+#         uses: aws-actions/configure-aws-credentials@v4
+#         with:
+#           aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID }}
+#           aws-secret-access-key: ${{ vars.AWS_SECRET_ACCESS_KEY }}
+#           aws-region: ${{ vars.AWS_DEFAULT_REGION }}
+
+#       - name: Setup Terraform
+#         uses: hashicorp/setup-terraform@v3
+
+#       - name: Terraform Init
+#         run: terraform init
+
+#       - name: Terraform Validate
+#         run: terraform validate
+
+#       - name: Terraform Plan
+#         run: terraform plan -var-file="prod.tfvars"
+
+#   apply:
+#     name: Terraform Apply (prod)
+#     needs: plan
+#     if: github.ref == 'refs/heads/master'
+#     runs-on: ubuntu-latest
+
+#     # THIS is what enforces manual approval
+#     environment:
+#       name: prod
+
+#     defaults:
+#       run:
+#         working-directory: environments/prod
+
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
+
+#       - name: Configure AWS credentials
+#         uses: aws-actions/configure-aws-credentials@v4
+#         with:
+#           aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID }}
+#           aws-secret-access-key: ${{ vars.AWS_SECRET_ACCESS_KEY }}
+#           aws-region: ${{ vars.AWS_DEFAULT_REGION }}
+
+#       - name: Setup Terraform
+#         uses: hashicorp/setup-terraform@v3
+
+#       - name: Terraform Init
+#         run: terraform init
+
+#       - name: Terraform Apply
+#         run: terraform apply -auto-approve -var-file="prod.tfvars"
+
 name: Terraform prod
 
 on:
@@ -14,25 +93,21 @@ jobs:
   plan:
     name: Terraform Plan (prod)
     runs-on: ubuntu-latest
-    environment: prod
 
     defaults:
       run:
         working-directory: environments/prod
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ vars.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_DEFAULT_REGION }}
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
         run: terraform init
@@ -41,7 +116,13 @@ jobs:
         run: terraform validate
 
       - name: Terraform Plan
-        run: terraform plan -var-file="prod.tfvars"
+        run: terraform plan -var-file="prod.tfvars" -out=tfplan
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-prod
+          path: environments/prod/tfplan
 
   apply:
     name: Terraform Apply (prod)
@@ -49,7 +130,7 @@ jobs:
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
 
-    # THIS is what enforces manual approval
+    #Manual approval enforced here
     environment:
       name: prod
 
@@ -58,21 +139,23 @@ jobs:
         working-directory: environments/prod
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: tfplan-prod
+          path: environments/prod
+
+      - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ vars.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_DEFAULT_REGION }}
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
         run: terraform init
 
-      - name: Terraform Apply
-        run: terraform apply -auto-approve -var-file="prod.tfvars"
+      - name: Terraform Apply (exact plan)
+        run: terraform apply -auto-approve tfplan
