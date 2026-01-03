@@ -8,7 +8,7 @@ resource "aws_instance" "ec2" {
 
   root_block_device {
     volume_type = "gp2"
-    volume_size = 50 # Adjust volume size as needed
+    volume_size = 30 # Adjust volume size as needed
   }
 
   #key_name = "key-${var.project_name}-${var.project_environment}" # Replace with your existing key pair name or create a new one
