@@ -11,8 +11,8 @@ resource "aws_instance" "ec2" {
     volume_size = 50 # Adjust volume size as needed
   }
 
-  key_name = "key-${var.project_name}-${var.project_environment}" # Replace with your existing key pair name or create a new one
-
+  #key_name = "key-${var.project_name}-${var.project_environment}" # Replace with your existing key pair name or create a new one
+  key_name = "ec2-key"
   tags = {
     Name = "ec2-${var.project_name}-${var.project_environment}"
     ENV  = upper(var.project_environment)
