@@ -4,7 +4,7 @@ module "dev_networking" {
   project_name        = var.project_name
   project_environment = var.project_environment
   app_subnet_cidr     = var.app_subnet_cidr
-  aws_vpc_id          = module.dev_networking.vpc_id_output
+
 }
 
 module "dev_sg" {
