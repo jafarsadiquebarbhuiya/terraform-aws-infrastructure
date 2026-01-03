@@ -76,7 +76,6 @@
 
 #       - name: Terraform Apply
 #         run: terraform apply -auto-approve -var-file="prod.tfvars"
-
 name: Terraform prod
 
 on:
@@ -99,15 +98,19 @@ jobs:
         working-directory: environments/prod
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      # 🔐 PLAN uses REPOSITORY SECRETS (no approval needed)
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-south-1
 
-      - uses: hashicorp/setup-terraform@v3
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
         run: terraform init
@@ -130,7 +133,7 @@ jobs:
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
 
-    #Manual approval enforced here
+    # Manual approval + ENVIRONMENT SECRETS
     environment:
       name: prod
 
@@ -139,20 +142,25 @@ jobs:
         working-directory: environments/prod
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/download-artifact@v4
+      - name: Download plan artifact
+        uses: actions/download-artifact@v4
         with:
           name: tfplan-prod
           path: environments/prod
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      # APPLY uses ENVIRONMENT SECRETS
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-south-1
 
-      - uses: hashicorp/setup-terraform@v3
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
         run: terraform init
