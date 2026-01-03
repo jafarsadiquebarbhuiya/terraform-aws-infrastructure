@@ -93,36 +93,30 @@ jobs:
     name: Terraform Plan (prod)
     runs-on: ubuntu-latest
 
+    #Environment secrets WITHOUT approval
+    environment:
+      name: prod-plan
+
     defaults:
       run:
         working-directory: environments/prod
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # 🔐 PLAN uses REPOSITORY SECRETS (no approval needed)
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-south-1
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v3
 
-      - name: Terraform Init
-        run: terraform init
+      - run: terraform init
+      - run: terraform validate
+      - run: terraform plan -var-file="prod.tfvars" -out=tfplan
 
-      - name: Terraform Validate
-        run: terraform validate
-
-      - name: Terraform Plan
-        run: terraform plan -var-file="prod.tfvars" -out=tfplan
-
-      - name: Upload plan artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: tfplan-prod
           path: environments/prod/tfplan
@@ -133,7 +127,7 @@ jobs:
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
 
-    # Manual approval + ENVIRONMENT SECRETS
+    #Environment secrets + approval
     environment:
       name: prod
 
@@ -142,28 +136,20 @@ jobs:
         working-directory: environments/prod
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Download plan artifact
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: tfplan-prod
           path: environments/prod
 
-      # APPLY uses ENVIRONMENT SECRETS
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-south-1
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v3
 
-      - name: Terraform Init
-        run: terraform init
-
-      - name: Terraform Apply (exact plan)
-        run: terraform apply -auto-approve tfplan
+      - run: terraform init
+      - run: terraform apply -auto-approve tfplan
